@@ -367,6 +367,29 @@ async function pushData(retry){
   updSyncBadge();return false;
 }
 
+// Determina la causa exacta de un fallo de escritura (scope vs cuenta equivocada).
+async function diagnoseAccess(){
+  try{
+    const u=await gh('https://api.github.com/user');
+    const login=u.ok?(await u.json()).login:null;
+    const r=await gh(`https://api.github.com/repos/${RC.owner}/${RC.name}`);
+    if(r.status===404){
+      return login
+        ?`El token (cuenta @${login}) no puede acceder al repo ${RC.owner}/${RC.name}. Verifica que sea de la cuenta ${RC.owner} y que tenga el scope public_repo.`
+        :'Token inválido o expirado.';
+    }
+    if(r.ok){
+      const repo=await r.json();
+      if(!(repo.permissions&&repo.permissions.push)){
+        return (login&&login.toLowerCase()!==RC.owner.toLowerCase())
+          ?`El token es de la cuenta @${login}, pero el repo pertenece a ${RC.owner}. Genera el token iniciando sesión como ${RC.owner}.`
+          :'El token no tiene permiso de escritura. Usa un token clásico con el scope public_repo (o repo).';
+      }
+    }
+  }catch(_){}
+  return '';
+}
+
 async function setupSync(token){
   syncToken=token;lastErr='';
   syncStatus='syncing';updSyncBadge();
@@ -376,7 +399,11 @@ async function setupSync(token){
     localStorage.setItem('panini2026_token',token);
     await pullData();
     const ok=await pushData();
-    if(!ok)throw new Error(lastErr||'write-failed');
+    if(!ok){
+      const d=await diagnoseAccess();
+      if(d)lastErr=d;
+      throw new Error(lastErr||'write-failed');
+    }
     return {ok:true};
   }catch(e){
     syncToken=null;
