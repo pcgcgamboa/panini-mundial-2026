@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Álbum Panini – FIFA World Cup 2026™</title>
+<style>
+:root{--bg:#080E1A;--card:#0B1423;--border:#111D2E;--gold:#D4A017;--gold2:#F8D66D;--text:#F1F5F9;--muted:#475569;--dim:#1E3050}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS','Segoe UI',sans-serif;min-height:100vh}
+#header{background:linear-gradient(160deg,#0E1B30,#132240);border-bottom:2px solid #D4A01760;padding:14px 14px 10px;position:sticky;top:0;z-index:200;box-shadow:0 6px 24px #0009}
+#header h1{text-align:center;font-size:17px;font-weight:900;color:#fff;letter-spacing:.3px;margin-bottom:2px;position:relative}
+.sub{text-align:center;font-size:9px;letter-spacing:3px;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
+#sync-badge{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:12px;cursor:pointer;padding:4px;color:#475569;transition:color .2s}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#sync-badge.syncing{animation:pulse 1s ease-in-out infinite}
+.prog-row{display:flex;justify-content:space-between;font-size:10px;margin-bottom:4px}
+.prog-row span:last-child{color:var(--gold);font-weight:800}
+.prog-track{height:7px;background:#0A1624;border-radius:4px;overflow:hidden;border:1px solid #1E2D45}
+.prog-bar{height:100%;background:linear-gradient(90deg,#B8860B,#F8D66D,#D4A017);border-radius:4px;transition:width .3s;box-shadow:0 0 8px #D4A01760}
+#tabs{display:flex;overflow-x:auto;gap:5px;padding:9px 12px 6px;background:#0B1220;border-bottom:1px solid var(--border);scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.tab{flex-shrink:0;padding:5px 13px;border-radius:20px;border:1px solid #1A2A40;font-size:11px;font-weight:700;cursor:pointer;background:transparent;color:#475569;transition:all .14s;letter-spacing:.2px}
+.tab.active{color:#000;border-color:transparent}
+#filters{display:flex;gap:6px;padding:7px 12px;background:var(--bg);border-bottom:1px solid #0D1824;align-items:center}
+.filt{padding:4px 11px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--dim);font-size:10px;font-weight:700;cursor:pointer;transition:all .14s}
+.filt.active{border-color:var(--gold);background:rgba(212,160,23,.12);color:var(--gold)}
+#filters .spacer{flex:1}
+#filters .remain{font-size:9px;color:#1E3050;letter-spacing:.2px}
+#content{padding:10px 12px 90px}
+.sec-card{margin-bottom:10px;border-radius:12px;border:1px solid;overflow:hidden}
+.sec-head{padding:11px 13px;display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
+.sec-head .ico{font-size:20px}
+.sec-head .info{flex:1}
+.sec-head .info .name{font-size:13px;font-weight:700;color:var(--text)}
+.sec-head .info .count{font-size:10px;color:var(--muted);margin-top:1px}
+.mini-bar{width:50px;height:4px;background:#1E2D45;border-radius:3px;overflow:hidden}
+.mini-fill{height:100%;border-radius:3px;transition:width .2s}
+.sec-head .arrow{color:#334155;font-size:11px;margin-left:4px}
+.sec-body{padding:0 13px 13px;display:none}
+.sec-body.open{display:block}
+.stick-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:2px}
+.conf-head{display:flex;align-items:center;gap:7px;margin:14px 0 8px;padding-bottom:7px;border-bottom:1px solid}
+.conf-stripe{width:3px;height:16px;border-radius:2px;flex-shrink:0}
+.conf-label{font-size:12px;font-weight:800;flex:1}
+.conf-mini{width:40px;height:3px;background:#0A1624;border-radius:2px;overflow:hidden}
+.conf-mini-fill{height:100%;border-radius:2px;transition:width .2s}
+.conf-stat{font-size:9px;color:#334155;min-width:60px;text-align:right}
+.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px}
+.team-card{border-radius:10px;border:1px solid var(--border);background:var(--card);overflow:hidden;transition:border-color .2s}
+.team-card.complete{border-color:var(--tc)}
+.team-head{padding:9px 10px 7px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px}
+.team-flag{font-size:20px;line-height:1}
+.team-info{flex:1;min-width:0}
+.team-name{font-size:11px;font-weight:700;color:#94A3B8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-card.complete .team-name{color:var(--text)}
+.team-sub{font-size:9px;color:#334155;margin-top:1px}
+.team-arrow{color:#1E3050;font-size:9px}
+.team-strip{height:2px;background:#0A1220}
+.team-fill{height:100%;transition:width .2s}
+.team-body{padding:7px 8px 10px;display:none}
+.team-body.open{display:block}
+.mark-all{width:100%;padding:4px;border-radius:5px;border:1px solid;background:transparent;font-size:9px;font-weight:700;cursor:pointer;margin-bottom:6px;letter-spacing:.3px;transition:opacity .1s}
+.stk{aspect-ratio:2/3;border-radius:5px;border:1px dashed #1E3050;background:#060C16;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:all .12s;position:relative;overflow:hidden}
+.stk.owned{border-width:2px}
+.stk .check{font-size:13px;opacity:0;transition:opacity .1s}
+.stk.owned .check{opacity:.85}
+.stk .num{position:absolute;bottom:2px;font-size:8px;font-weight:700;color:#1E3050;transition:color .12s}
+.stk.owned .num{color:inherit}
+#bottom{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(0deg,#0B1423 60%,transparent);padding:10px 16px 14px;display:flex;justify-content:space-around;pointer-events:none}
+.stat{text-align:center}
+.stat .val{font-size:18px;font-weight:900}
+.stat .lbl{font-size:9px;color:#334155;letter-spacing:.5px}
+.overlay{display:none;position:fixed;inset:0;background:#000a;z-index:400;align-items:center;justify-content:center;padding:16px}
+.overlay.open{display:flex}
+.modal{background:#0E1B30;border:1px solid #D4A01750;border-radius:14px;padding:20px;width:100%;max-width:380px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:14px;color:var(--gold);margin-bottom:12px}
+.modal label{display:block;font-size:10px;color:var(--muted);margin-bottom:4px;letter-spacing:.3px;text-transform:uppercase}
+.modal input,.modal textarea{width:100%;background:#060C16;border:1px solid var(--dim);border-radius:6px;color:var(--text);font-size:11px;padding:8px;outline:none;font-family:monospace}
+.modal textarea{height:80px;resize:none;font-size:10px}
+.modal .btns{display:flex;gap:8px;margin-top:12px}
+.modal .btns button{flex:1;padding:9px;border-radius:8px;border:none;font-size:11px;font-weight:700;cursor:pointer}
+.btn-ok{background:var(--gold);color:#000}
+.btn-cancel{background:#1E2D45;color:var(--muted)}
+.btn-danger{background:#7F1D1D;color:#FCA5A5}
+.help{font-size:10px;color:#64748B;line-height:1.6;padding:10px;background:#060C16;border-radius:6px;margin-bottom:12px;border:1px solid #1E2D45}
+.help b{color:var(--gold)}
+.help a{color:#60A5FA;text-decoration:none}
+.help ol{padding-left:18px;margin-top:6px}
+.help li{margin-bottom:3px}
+.toolbar{display:flex;gap:6px;padding:5px 12px 0;background:var(--bg);flex-wrap:wrap}
+.tool-btn{padding:4px 10px;border-radius:8px;border:1px solid var(--dim);background:transparent;color:var(--muted);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.2px}
+.tool-btn.sync-on{border-color:#22C55E50;color:#22C55E}
+.sync-status{font-size:10px;padding:8px 10px;border-radius:6px;margin-bottom:10px;background:#060C16;border:1px solid #1E2D45}
+.sync-status.ok{border-color:#22C55E50;color:#22C55E}
+.sync-status.err{border-color:#EF444450;color:#EF4444}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="sub">Colección Oficial Panini</div>
+  <h1>⚽ FIFA World Cup 2026™ <span id="sync-badge" title="Configurar sincronización">☁️</span></h1>
+  <div class="prog-row"><span id="prog-label">0 / 980 figuritas</span><span id="prog-pct">0%</span></div>
+  <div class="prog-track"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+</div>
+<div id="tabs">
+  <button class="tab active" data-tab="all" style="background:#D4A017;color:#000">Todas</button>
+  <button class="tab" data-tab="special">🏆 Especial</button>
+  <button class="tab" data-tab="CONMEBOL">CONMEBOL</button>
+  <button class="tab" data-tab="CONCACAF">CONCACAF</button>
+  <button class="tab" data-tab="UEFA">UEFA</button>
+  <button class="tab" data-tab="AFC">AFC</button>
+  <button class="tab" data-tab="CAF">CAF</button>
+  <button class="tab" data-tab="OFC">OFC</button>
+</div>
+<div id="filters">
+  <button class="filt active" data-f="all">Todas</button>
+  <button class="filt" data-f="owned">✅ Tengo</button>
+  <button class="filt" data-f="missing">⬜ Me faltan</button>
+  <span class="spacer"></span>
+  <span class="remain" id="remain">980 restantes</span>
+</div>
+<div class="toolbar">
+  <button class="tool-btn" id="btn-sync">☁️ Sync</button>
+  <button class="tool-btn" id="btn-export">📤 Exportar</button>
+  <button class="tool-btn" id="btn-import">📥 Importar</button>
+  <button class="tool-btn" id="btn-reset" style="color:#EF4444;border-color:#EF444430">🗑 Resetear</button>
+</div>
+<div id="content"></div>
+<div id="bottom">
+  <div class="stat"><div class="val" id="st-own" style="color:#22C55E">0</div><div class="lbl">Tengo</div></div>
+  <div class="stat"><div class="val" id="st-miss" style="color:#EF4444">980</div><div class="lbl">Me faltan</div></div>
+  <div class="stat"><div class="val" id="st-pct" style="color:#D4A017">0%</div><div class="lbl">Completado</div></div>
+</div>
+
+<!-- EXPORT/IMPORT MODAL -->
+<div id="overlay" class="overlay">
+  <div class="modal">
+    <h3 id="modal-title">Exportar colección</h3>
+    <textarea id="modal-data"></textarea>
+    <div class="btns">
+      <button class="btn-cancel" id="modal-cancel">Cancelar</button>
+      <button class="btn-ok" id="modal-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC MODAL -->
+<div id="sync-overlay" class="overlay">
+  <div class="modal">
+    <h3>☁️ Sincronización entre dispositivos</h3>
+    <div id="sync-current"></div>
+    <div class="help">
+      <b>¿Cómo funciona?</b><br>
+      Tu colección se guarda en un <b>Gist privado</b> de tu cuenta de GitHub. Desde cualquier dispositivo donde uses el mismo token, verás los mismos datos.
+      <br><br>
+      <b>Cómo conseguir tu token:</b>
+      <ol>
+        <li>Abre <a href="https://github.com/settings/tokens/new?scopes=gist&description=Panini%20Album%202026" target="_blank">github.com/settings/tokens/new</a></li>
+        <li>Marca solo el scope <b>gist</b></li>
+        <li>Pon expiración (90 días recomendado)</li>
+        <li>Click en <b>Generate token</b></li>
+        <li>Copia el token (empieza con <code>ghp_</code>) y pégalo abajo</li>
+      </ol>
+    </div>
+    <label>Token de GitHub (gist scope)</label>
+    <input type="password" id="sync-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+    <div class="btns">
+      <button class="btn-cancel" id="sync-cancel">Cerrar</button>
+      <button class="btn-danger" id="sync-disconnect" style="display:none">Desconectar</button>
+      <button class="btn-ok" id="sync-connect">Conectar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONFS=['CONMEBOL','CONCACAF','UEFA','AFC','CAF','OFC'];
+const CC={CONMEBOL:'#F59E0B',CONCACAF:'#10B981',UEFA:'#3B82F6',AFC:'#EF4444',CAF:'#A855F7',OFC:'#F97316'};
+const TEAMS=[
+  {id:'arg',name:'Argentina',    flag:'🇦🇷',conf:'CONMEBOL'},
+  {id:'bra',name:'Brasil',       flag:'🇧🇷',conf:'CONMEBOL'},
+  {id:'col',name:'Colombia',     flag:'🇨🇴',conf:'CONMEBOL'},
+  {id:'uru',name:'Uruguay',      flag:'🇺🇾',conf:'CONMEBOL'},
+  {id:'ecu',name:'Ecuador',      flag:'🇪🇨',conf:'CONMEBOL'},
+  {id:'par',name:'Paraguay',     flag:'🇵🇾',conf:'CONMEBOL'},
+  {id:'ven',name:'Venezuela',    flag:'🇻🇪',conf:'CONMEBOL'},
+  {id:'usa',name:'EE.UU.',       flag:'🇺🇸',conf:'CONCACAF'},
+  {id:'mex',name:'México',       flag:'🇲🇽',conf:'CONCACAF'},
+  {id:'can',name:'Canadá',       flag:'🇨🇦',conf:'CONCACAF'},
+  {id:'pan',name:'Panamá',       flag:'🇵🇦',conf:'CONCACAF'},
+  {id:'hon',name:'Honduras',     flag:'🇭🇳',conf:'CONCACAF'},
+  {id:'jam',name:'Jamaica',      flag:'🇯🇲',conf:'CONCACAF'},
+  {id:'ger',name:'Alemania',     flag:'🇩🇪',conf:'UEFA'},
+  {id:'fra',name:'Francia',      flag:'🇫🇷',conf:'UEFA'},
+  {id:'esp',name:'España',       flag:'🇪🇸',conf:'UEFA'},
+  {id:'eng',name:'Inglaterra',   flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',conf:'UEFA'},
+  {id:'por',name:'Portugal',     flag:'🇵🇹',conf:'UEFA'},
+  {id:'ned',name:'Países Bajos', flag:'🇳🇱',conf:'UEFA'},
+  {id:'bel',name:'Bélgica',      flag:'🇧🇪',conf:'UEFA'},
+  {id:'sui',name:'Suiza',        flag:'🇨🇭',conf:'UEFA'},
+  {id:'aut',name:'Austria',      flag:'🇦🇹',conf:'UEFA'},
+  {id:'tur',name:'Turquía',      flag:'🇹🇷',conf:'UEFA'},
+  {id:'pol',name:'Polonia',      flag:'🇵🇱',conf:'UEFA'},
+  {id:'cro',name:'Croacia',      flag:'🇭🇷',conf:'UEFA'},
+  {id:'srb',name:'Serbia',       flag:'🇷🇸',conf:'UEFA'},
+  {id:'sco',name:'Escocia',      flag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿',conf:'UEFA'},
+  {id:'den',name:'Dinamarca',    flag:'🇩🇰',conf:'UEFA'},
+  {id:'hun',name:'Hungría',      flag:'🇭🇺',conf:'UEFA'},
+  {id:'jpn',name:'Japón',        flag:'🇯🇵',conf:'AFC'},
+  {id:'kor',name:'Corea del Sur',flag:'🇰🇷',conf:'AFC'},
+  {id:'irn',name:'Irán',         flag:'🇮🇷',conf:'AFC'},
+  {id:'aus',name:'Australia',    flag:'🇦🇺',conf:'AFC'},
+  {id:'ksa',name:'Arabia Saudita',flag:'🇸🇦',conf:'AFC'},
+  {id:'jor',name:'Jordania',     flag:'🇯🇴',conf:'AFC'},
+  {id:'irq',name:'Irak',         flag:'🇮🇶',conf:'AFC'},
+  {id:'uzb',name:'Uzbekistán',   flag:'🇺🇿',conf:'AFC'},
+  {id:'mar',name:'Marruecos',    flag:'🇲🇦',conf:'CAF'},
+  {id:'sen',name:'Senegal',      flag:'🇸🇳',conf:'CAF'},
+  {id:'nga',name:'Nigeria',      flag:'🇳🇬',conf:'CAF'},
+  {id:'alg',name:'Argelia',      flag:'🇩🇿',conf:'CAF'},
+  {id:'tun',name:'Túnez',        flag:'🇹🇳',conf:'CAF'},
+  {id:'egy',name:'Egipto',       flag:'🇪🇬',conf:'CAF'},
+  {id:'cmr',name:'Camerún',      flag:'🇨🇲',conf:'CAF'},
+  {id:'civ',name:'Costa de Marfil',flag:'🇨🇮',conf:'CAF'},
+  {id:'cod',name:'DR Congo',     flag:'🇨🇩',conf:'CAF'},
+  {id:'rsa',name:'Sudáfrica',    flag:'🇿🇦',conf:'CAF'},
+  {id:'nzl',name:'Nueva Zelanda',flag:'🇳🇿',conf:'OFC'},
+];
+const SP=[
+  {id:'presentacion',name:'Presentación del Torneo',icon:'🏆',color:'#F59E0B',stickers:[
+    {id:'pre_01',label:'Portada oficial',num:1},
+    {id:'pre_02',label:'Logotipo FIFA',num:2},
+    {id:'pre_03',label:'Trofeo Copa del Mundo',num:3},
+    {id:'pre_04',label:'Mascota oficial',num:4},
+    {id:'pre_05',label:'Historia del torneo',num:5},
+    {id:'pre_06',label:'Récords históricos',num:6},
+    {id:'pre_07',label:'Camino al torneo',num:7},
+    {id:'pre_08',label:'Formato 2026',num:8},
+    {id:'pre_09',label:'Datos del torneo',num:9},
+    {id:'pre_10',label:'Calendario',num:10},
+  ]},
+  {id:'estadios',name:'Sedes y Estadios',icon:'🏟️',color:'#818CF8',stickers:[
+    {id:'est_01',label:'MetLife Stadium',num:1},
+    {id:'est_02',label:'SoFi Stadium',num:2},
+    {id:'est_03',label:'AT&T Stadium',num:3},
+    {id:'est_04',label:"Levi's Stadium",num:4},
+    {id:'est_05',label:'Rose Bowl',num:5},
+    {id:'est_06',label:'Arrowhead Stadium',num:6},
+    {id:'est_07',label:'Lincoln Financial',num:7},
+    {id:'est_08',label:'Gillette Stadium',num:8},
+    {id:'est_09',label:'Mercedes-Benz',num:9},
+    {id:'est_10',label:'Hard Rock Stadium',num:10},
+  ]},
+];
+const TOTAL=980;
+const GIST_FN='panini-mundial-2026.json';
+const GIST_DESC='Álbum Panini FIFA World Cup 2026 - Mi colección';
+
+function ts(tid){
+  const s=[{id:`${tid}_badge`,label:'Escudo',type:'special',num:'★'}];
+  for(let i=1;i<=18;i++) s.push({id:`${tid}_p${i}`,label:`Jugador ${i}`,type:'player',num:i});
+  s.push({id:`${tid}_group`,label:'Foto Grupal',type:'special',num:'📸'});
+  return s;
+}
+
+let owned=new Set(JSON.parse(localStorage.getItem('panini2026')||'[]'));
+let curTab='all',curF='all';
+const exp=new Set();
+
+// ── SYNC STATE ──
+let syncToken=localStorage.getItem('panini2026_token')||null;
+let syncGistId=localStorage.getItem('panini2026_gist')||null;
+let syncStatus='idle';
+let syncTimer=null;
+let pullPending=false;
+
+function updSyncBadge(){
+  const b=document.getElementById('sync-badge');
+  if(!syncToken){b.textContent='☁️';b.style.color='#475569';b.classList.remove('syncing');b.title='Sync no configurado';return;}
+  const m={syncing:{i:'☁️',c:'#F59E0B',t:'Sincronizando…',cls:'syncing'},synced:{i:'☁️✓',c:'#22C55E',t:'Sincronizado',cls:''},error:{i:'☁️✕',c:'#EF4444',t:'Error',cls:''},idle:{i:'☁️',c:'#3B82F6',t:'Sync activo',cls:''}};
+  const s=m[syncStatus]||m.idle;
+  b.textContent=s.i;b.style.color=s.c;b.title=s.t;
+  b.classList.toggle('syncing',!!s.cls);
+  document.getElementById('btn-sync').classList.toggle('sync-on',!!syncToken);
+}
+
+async function gh(url,opts={}){
+  return fetch(url,{...opts,headers:{Authorization:`token ${syncToken}`,Accept:'application/vnd.github+json',...(opts.headers||{})}});
+}
+
+async function findOrCreateGist(){
+  let page=1;
+  while(page<=5){
+    const r=await gh(`https://api.github.com/gists?per_page=100&page=${page}`);
+    if(!r.ok)throw new Error('token-invalid');
+    const list=await r.json();
+    const found=list.find(g=>g.files&&g.files[GIST_FN]);
+    if(found)return found.id;
+    if(list.length<100)break;
+    page++;
+  }
+  const c=await gh('https://api.github.com/gists',{
+    method:'POST',
+    body:JSON.stringify({description:GIST_DESC,public:false,files:{[GIST_FN]:{content:JSON.stringify([...owned])}}})
+  });
+  if(!c.ok)throw new Error('create-failed');
+  const d=await c.json();
+  return d.id;
+}
+
+async function pullGist(){
+  if(!syncToken||!syncGistId||pullPending)return;
+  pullPending=true;syncStatus='syncing';updSyncBadge();
+  try{
+    const r=await gh(`https://api.github.com/gists/${syncGistId}`);
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+    const content=d.files[GIST_FN]?.content;
+    if(content){
+      const arr=JSON.parse(content);
+      if(Array.isArray(arr)){
+        owned=new Set(arr);
+        localStorage.setItem('panini2026',JSON.stringify(arr));
+        render();updProg();updConf();
+      }
+    }
+    syncStatus='synced';
+  }catch(e){syncStatus='error';}
+  pullPending=false;updSyncBadge();
+}
+
+function schedulePush(){
+  if(!syncToken||!syncGistId)return;
+  if(syncTimer)clearTimeout(syncTimer);
+  syncStatus='syncing';updSyncBadge();
+  syncTimer=setTimeout(pushGist,1500);
+}
+
+async function pushGist(){
+  if(!syncToken||!syncGistId)return;
+  try{
+    const r=await gh(`https://api.github.com/gists/${syncGistId}`,{
+      method:'PATCH',
+      body:JSON.stringify({files:{[GIST_FN]:{content:JSON.stringify([...owned])}}})
+    });
+    if(!r.ok)throw new Error();
+    syncStatus='synced';
+  }catch(e){syncStatus='error';}
+  updSyncBadge();
+}
+
+async function setupSync(token){
+  syncToken=token;
+  syncStatus='syncing';updSyncBadge();
+  try{
+    const id=await findOrCreateGist();
+    syncGistId=id;
+    localStorage.setItem('panini2026_token',token);
+    localStorage.setItem('panini2026_gist',id);
+    await pullGist();
+    return {ok:true};
+  }catch(e){
+    syncToken=null;syncGistId=null;
+    localStorage.removeItem('panini2026_token');
+    localStorage.removeItem('panini2026_gist');
+    syncStatus='idle';updSyncBadge();
+    return {ok:false,err:e.message};
+  }
+}
+
+function disconnectSync(){
+  syncToken=null;syncGistId=null;
+  localStorage.removeItem('panini2026_token');
+  localStorage.removeItem('panini2026_gist');
+  syncStatus='idle';updSyncBadge();
+}
+
+function save(){
+  localStorage.setItem('panini2026',JSON.stringify([...owned]));
+  schedulePush();
+}
+
+function el(tag,cls,html){const e=document.createElement(tag);if(cls)e.className=cls;if(html!==undefined)e.innerHTML=html;return e;}
+
+function makeSlot(stk,color){
+  const isO=owned.has(stk.id);
+  const d=el('div','stk'+(isO?' owned':''));
+  d.dataset.id=stk.id;d.title=stk.label;d.style.color=color;
+  d.appendChild(el('span','check',stk.type==='special'?'⭐':'✓'));
+  d.appendChild(el('span','num',String(stk.num)));
+  d.addEventListener('click',()=>tog(stk.id,d,color));
+  return d;
+}
+
+function tog(id,el,color){
+  if(owned.has(id)){owned.delete(id);el.classList.remove('owned');}
+  else{owned.add(id);el.classList.add('owned');el.style.color=color;}
+  save();updProg();updConf();updTeam(id);updSec(id);
+}
+
+function updProg(){
+  const n=owned.size,p=Math.round(n/TOTAL*100);
+  document.getElementById('prog-label').textContent=`${n.toLocaleString()} / ${TOTAL.toLocaleString()} figuritas`;
+  document.getElementById('prog-pct').textContent=`${p}%`;
+  document.getElementById('prog-bar').style.width=`${p}%`;
+  document.getElementById('remain').textContent=`${TOTAL-n} restantes`;
+  document.getElementById('st-own').textContent=n;
+  document.getElementById('st-miss').textContent=TOTAL-n;
+  document.getElementById('st-pct').textContent=`${p}%`;
+}
+
+function updConf(){
+  document.querySelectorAll('[data-conf-id]').forEach(el=>{
+    const c=el.getAttribute('data-conf-id');
+    const teams=TEAMS.filter(t=>t.conf===c);
+    const o=teams.reduce((s,t)=>s+ts(t.id).filter(x=>owned.has(x.id)).length,0);
+    const tot=teams.length*20,p=Math.round(o/tot*100);
+    const st=el.querySelector('.conf-stat');if(st)st.textContent=`${o}/${tot} · ${p}%`;
+    const f=el.querySelector('.conf-mini-fill');if(f)f.style.width=`${p}%`;
+  });
+}
+
+function updTeam(sOrT){
+  const tid=sOrT.includes('_')?sOrT.split('_')[0]:sOrT;
+  const card=document.querySelector(`[data-team-id="${tid}"]`);if(!card)return;
+  const stks=ts(tid),o=stks.filter(s=>owned.has(s.id)).length,p=Math.round(o/20*100),comp=o===20;
+  card.classList.toggle('complete',comp);
+  const sub=card.querySelector('.team-sub');if(sub)sub.textContent=`${o}/20 · ${p}%`;
+  const f=card.querySelector('.team-fill');if(f)f.style.width=`${p}%`;
+  const ic=card.querySelector('.team-ci');if(ic)ic.textContent=comp?'✅':'';
+  const ma=card.querySelector('.mark-all');if(ma)ma.textContent=o===20?'✕ Desmarcar todo':'✓ Marcar todo';
+}
+
+function updSec(id){
+  SP.forEach(sec=>{
+    if(!sec.stickers.find(s=>s.id===id))return;
+    const el=document.querySelector(`[data-sec-id="${sec.id}"]`);if(!el)return;
+    const o=sec.stickers.filter(s=>owned.has(s.id)).length,p=Math.round(o/sec.stickers.length*100);
+    const cnt=el.querySelector('.count');if(cnt)cnt.textContent=`${o} / ${sec.stickers.length} figuritas · ${p}%`;
+    const f=el.querySelector('.mini-fill');if(f)f.style.width=`${p}%`;
+  });
+}
+
+function buildSec(sec){
+  const o=sec.stickers.filter(s=>owned.has(s.id)).length,p=Math.round(o/sec.stickers.length*100);
+  const card=el('div','sec-card');card.setAttribute('data-sec-id',sec.id);card.style.borderColor=sec.color+'50';
+  const head=el('div','sec-head');
+  head.innerHTML=`<span class="ico">${sec.icon}</span><div class="info"><div class="name">${sec.name}</div><div class="count">${o} / ${sec.stickers.length} figuritas · ${p}%</div></div><div class="mini-bar"><div class="mini-fill" style="width:${p}%;background:${sec.color}"></div></div><span class="arrow">▼</span>`;
+  const body=el('div','sec-body');
+  const grid=el('div','stick-grid');
+  sec.stickers.forEach(stk=>{
+    if(curF==='owned'&&!owned.has(stk.id))return;
+    if(curF==='missing'&&owned.has(stk.id))return;
+    grid.appendChild(makeSlot(stk,sec.color));
+  });
+  body.appendChild(grid);
+  if(exp.has(sec.id)){body.classList.add('open');head.querySelector('.arrow').textContent='▲';}
+  head.addEventListener('click',()=>{
+    const isO=body.classList.toggle('open');
+    head.querySelector('.arrow').textContent=isO?'▲':'▼';
+    isO?exp.add(sec.id):exp.delete(sec.id);
+  });
+  card.appendChild(head);card.appendChild(body);return card;
+}
+
+function buildTeam(team){
+  const stks=ts(team.id),o=stks.filter(s=>owned.has(s.id)).length,p=Math.round(o/20*100),comp=o===20,col=CC[team.conf];
+  const card=el('div','team-card'+(comp?' complete':''));
+  card.setAttribute('data-team-id',team.id);card.style.setProperty('--tc',col);
+  if(comp)card.style.borderColor=col;
+  const head=el('div','team-head');
+  head.innerHTML=`<span class="team-flag">${team.flag}</span><div class="team-info"><div class="team-name">${team.name}</div><div class="team-sub">${o}/20 · ${p}%</div></div><span class="team-ci" style="font-size:10px">${comp?'✅':''}</span><span class="team-arrow">▼</span>`;
+  const strip=el('div','team-strip'),fill=el('div','team-fill');
+  fill.style.cssText=`width:${p}%;background:${comp?col:col+'70'}`;
+  strip.appendChild(fill);
+  const body=el('div','team-body');
+  const ma=el('button','mark-all',o===20?'✕ Desmarcar todo':'✓ Marcar todo');
+  ma.style.cssText=`border-color:${col}50;color:${col}`;
+  ma.addEventListener('click',e=>{
+    e.stopPropagation();const all=stks.every(s=>owned.has(s.id));
+    stks.forEach(s=>{all?owned.delete(s.id):owned.add(s.id);});
+    save();render();updProg();updConf();
+  });
+  const grid=el('div','stick-grid');
+  stks.forEach(stk=>{
+    if(curF==='owned'&&!owned.has(stk.id))return;
+    if(curF==='missing'&&owned.has(stk.id))return;
+    grid.appendChild(makeSlot(stk,col));
+  });
+  body.appendChild(ma);body.appendChild(grid);
+  if(exp.has(team.id)){body.classList.add('open');head.querySelector('.team-arrow').textContent='▲';}
+  head.addEventListener('click',()=>{
+    const isO=body.classList.toggle('open');
+    head.querySelector('.team-arrow').textContent=isO?'▲':'▼';
+    isO?exp.add(team.id):exp.delete(team.id);
+  });
+  card.appendChild(head);card.appendChild(strip);card.appendChild(body);return card;
+}
+
+function render(){
+  const cont=document.getElementById('content');cont.innerHTML='';
+  if(curTab==='all'||curTab==='special') SP.forEach(sec=>cont.appendChild(buildSec(sec)));
+  if(curTab!=='special'){
+    const confs=curTab==='all'?CONFS:[curTab];
+    confs.forEach(conf=>{
+      const teams=TEAMS.filter(t=>t.conf===conf);if(!teams.length)return;
+      const o=teams.reduce((s,t)=>s+ts(t.id).filter(x=>owned.has(x.id)).length,0);
+      const tot=teams.length*20,p=Math.round(o/tot*100),col=CC[conf];
+      const ch=el('div','conf-head');ch.setAttribute('data-conf-id',conf);ch.style.borderColor=col+'30';
+      ch.innerHTML=`<div class="conf-stripe" style="background:${col}"></div><span class="conf-label" style="color:${col}">${conf}</span><div class="conf-mini"><div class="conf-mini-fill" style="width:${p}%;background:${col}"></div></div><span class="conf-stat">${o}/${tot} · ${p}%</span>`;
+      cont.appendChild(ch);
+      const tg=el('div','team-grid');teams.forEach(t=>tg.appendChild(buildTeam(t)));cont.appendChild(tg);
+    });
+  }
+}
+
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    curTab=btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(b=>{b.classList.remove('active');b.style.background='transparent';b.style.color='#475569';});
+    btn.classList.add('active');const col=CC[curTab]||'#D4A017';btn.style.background=col;btn.style.color='#000';
+    render();updProg();
+  });
+});
+
+document.querySelectorAll('.filt').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    curF=btn.dataset.f;
+    document.querySelectorAll('.filt').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');render();
+  });
+});
+
+// ── EXPORT/IMPORT ──
+let mMode='export';
+function openModal(){document.getElementById('overlay').classList.add('open');}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+
+document.getElementById('btn-export').addEventListener('click',()=>{
+  mMode='export';
+  document.getElementById('modal-title').textContent='📤 Exportar colección';
+  document.getElementById('modal-data').value=JSON.stringify([...owned]);
+  document.getElementById('modal-data').readOnly=true;
+  document.getElementById('modal-ok').textContent='Copiar';
+  openModal();
+  setTimeout(()=>document.getElementById('modal-data').select(),50);
+});
+
+document.getElementById('btn-import').addEventListener('click',()=>{
+  mMode='import';
+  document.getElementById('modal-title').textContent='📥 Importar colección';
+  document.getElementById('modal-data').value='';
+  document.getElementById('modal-data').readOnly=false;
+  document.getElementById('modal-ok').textContent='Importar';
+  openModal();
+});
+
+document.getElementById('btn-reset').addEventListener('click',()=>{
+  if(!confirm('¿Resetear toda la colección? Esta acción no se puede deshacer.'))return;
+  owned.clear();save();render();updProg();updConf();
+});
+
+document.getElementById('modal-ok').addEventListener('click',()=>{
+  if(mMode==='export'){
+    navigator.clipboard.writeText(document.getElementById('modal-data').value).catch(()=>{});
+    closeModal();return;
+  }
+  try{
+    const data=JSON.parse(document.getElementById('modal-data').value);
+    if(!Array.isArray(data))throw new Error();
+    owned=new Set(data);save();render();updProg();updConf();
+    closeModal();
+  }catch(e){alert('Código inválido. Asegúrate de pegar el texto exacto.');}
+});
+
+document.getElementById('modal-cancel').addEventListener('click',closeModal);
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal();});
+
+// ── SYNC MODAL ──
+function openSyncModal(){
+  const cur=document.getElementById('sync-current');
+  if(syncToken){
+    cur.innerHTML=`<div class="sync-status ok">✓ Sincronización activa<br><span style="font-size:9px;color:#64748B">Gist ID: ${syncGistId?.slice(0,8)}…</span></div>`;
+    document.getElementById('sync-disconnect').style.display='block';
+    document.getElementById('sync-connect').textContent='Actualizar token';
+    document.getElementById('sync-token').value='';
+  }else{
+    cur.innerHTML='';
+    document.getElementById('sync-disconnect').style.display='none';
+    document.getElementById('sync-connect').textContent='Conectar';
+  }
+  document.getElementById('sync-overlay').classList.add('open');
+}
+function closeSyncModal(){document.getElementById('sync-overlay').classList.remove('open');}
+
+document.getElementById('btn-sync').addEventListener('click',openSyncModal);
+document.getElementById('sync-badge').addEventListener('click',openSyncModal);
+document.getElementById('sync-cancel').addEventListener('click',closeSyncModal);
+document.getElementById('sync-overlay').addEventListener('click',e=>{if(e.target.id==='sync-overlay')closeSyncModal();});
+
+document.getElementById('sync-connect').addEventListener('click',async()=>{
+  const tok=document.getElementById('sync-token').value.trim();
+  if(!tok){alert('Pega tu token de GitHub primero.');return;}
+  const cur=document.getElementById('sync-current');
+  cur.innerHTML='<div class="sync-status">⏳ Conectando con GitHub…</div>';
+  const res=await setupSync(tok);
+  if(res.ok){
+    cur.innerHTML='<div class="sync-status ok">✓ ¡Conectado! Tu colección se sincronizará automáticamente.</div>';
+    document.getElementById('sync-disconnect').style.display='block';
+    document.getElementById('sync-token').value='';
+    setTimeout(closeSyncModal,1500);
+  }else{
+    cur.innerHTML='<div class="sync-status err">✕ Error: token inválido o sin permisos de gist.</div>';
+  }
+});
+
+document.getElementById('sync-disconnect').addEventListener('click',()=>{
+  if(!confirm('¿Desconectar la sincronización? Tus datos locales se mantendrán.'))return;
+  disconnectSync();
+  closeSyncModal();
+});
+
+// ── INIT ──
+render();updProg();updSyncBadge();
+if(syncToken&&syncGistId) pullGist();
+</script>
+</body>
+</html>
