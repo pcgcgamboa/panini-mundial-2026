@@ -284,13 +284,14 @@ let dataSha=null;
 let syncStatus='idle';
 let syncTimer=null;
 let pullPending=false;
+let lastErr='';
 
 function updSyncBadge(){
   const b=document.getElementById('sync-badge');
   if(!syncToken){b.textContent='☁️';b.style.color='#475569';b.classList.remove('syncing');b.title='Sync no configurado';return;}
   const m={syncing:{i:'☁️',c:'#F59E0B',t:'Sincronizando…',cls:'syncing'},synced:{i:'☁️✓',c:'#22C55E',t:'Sincronizado',cls:''},error:{i:'☁️✕',c:'#EF4444',t:'Error',cls:''},idle:{i:'☁️',c:'#3B82F6',t:'Sync activo',cls:''}};
   const s=m[syncStatus]||m.idle;
-  b.textContent=s.i;b.style.color=s.c;b.title=s.t;
+  b.textContent=s.i;b.style.color=s.c;b.title=(syncStatus==='error'&&lastErr)?('Error — '+lastErr):s.t;
   b.classList.toggle('syncing',!!s.cls);
   document.getElementById('btn-sync').classList.toggle('sync-on',!!syncToken);
 }
@@ -342,7 +343,7 @@ function schedulePush(){
 
 // Guarda la colección en coleccion.json del repo (requiere token public_repo).
 async function pushData(retry){
-  if(!syncToken)return;
+  if(!syncToken)return false;
   try{
     const body={message:`Actualizar colección (${owned.size}/${TOTAL})`,content:encB64(JSON.stringify([...owned])),branch:RC.branch};
     if(dataSha)body.sha=dataSha;
@@ -352,23 +353,30 @@ async function pushData(retry){
       dataSha=g.ok?(await g.json()).sha:null;
       return pushData(true);
     }
-    if(!r.ok)throw new Error('write-failed');
+    if(!r.ok){
+      let msg='';try{msg=(await r.json()).message||'';}catch(_){}
+      lastErr=(r.status===401||r.status===403||r.status===404)
+        ?`Sin permiso de escritura: el token necesita el scope public_repo (HTTP ${r.status})`
+        :`HTTP ${r.status}${msg?': '+msg:''}`;
+      throw new Error('write-failed');
+    }
     const d=await r.json();
     if(d.content&&d.content.sha)dataSha=d.content.sha;
-    syncStatus='synced';
+    syncStatus='synced';lastErr='';updSyncBadge();return true;
   }catch(e){syncStatus='error';}
-  updSyncBadge();
+  updSyncBadge();return false;
 }
 
 async function setupSync(token){
-  syncToken=token;
+  syncToken=token;lastErr='';
   syncStatus='syncing';updSyncBadge();
   try{
     const u=await gh('https://api.github.com/user');
     if(!u.ok)throw new Error('token-invalid');
     localStorage.setItem('panini2026_token',token);
     await pullData();
-    await pushData();
+    const ok=await pushData();
+    if(!ok)throw new Error(lastErr||'write-failed');
     return {ok:true};
   }catch(e){
     syncToken=null;
@@ -619,7 +627,8 @@ document.getElementById('sync-connect').addEventListener('click',async()=>{
     document.getElementById('sync-token').value='';
     setTimeout(closeSyncModal,1500);
   }else{
-    cur.innerHTML='<div class="sync-status err">✕ Error: token inválido o sin permisos (public_repo).</div>';
+    const msg=res.err==='token-invalid'?'Token inválido o expirado.':(res.err||'No se pudo conectar.');
+    cur.innerHTML='<div class="sync-status err">✕ '+msg+'</div>';
   }
 });
 
