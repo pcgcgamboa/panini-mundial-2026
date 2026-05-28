@@ -148,22 +148,22 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS','Segoe UI
 <!-- SYNC MODAL -->
 <div id="sync-overlay" class="overlay">
   <div class="modal">
-    <h3>☁️ Sincronización entre dispositivos</h3>
+    <h3>☁️ Guardar en tu repositorio</h3>
     <div id="sync-current"></div>
     <div class="help">
       <b>¿Cómo funciona?</b><br>
-      Tu colección se guarda en un <b>Gist privado</b> de tu cuenta de GitHub. Desde cualquier dispositivo donde uses el mismo token, verás los mismos datos.
+      Tu colección se guarda en el archivo <b>coleccion.json</b> de tu repositorio. Como el repo es público, <b>al abrir la página desde cualquier computadora verás la versión actual</b> sin necesidad de token. El token solo se necesita en el dispositivo donde quieras <b>editar y guardar</b> cambios.
       <br><br>
-      <b>Cómo conseguir tu token:</b>
+      <b>Cómo conseguir tu token (solo para editar):</b>
       <ol>
-        <li>Abre <a href="https://github.com/settings/tokens/new?scopes=gist&description=Panini%20Album%202026" target="_blank">github.com/settings/tokens/new</a></li>
-        <li>Marca solo el scope <b>gist</b></li>
+        <li>Abre <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=Panini%20Album%202026" target="_blank">github.com/settings/tokens/new</a></li>
+        <li>Marca solo el scope <b>public_repo</b></li>
         <li>Pon expiración (90 días recomendado)</li>
         <li>Click en <b>Generate token</b></li>
         <li>Copia el token (empieza con <code>ghp_</code>) y pégalo abajo</li>
       </ol>
     </div>
-    <label>Token de GitHub (gist scope)</label>
+    <label>Token de GitHub (scope public_repo)</label>
     <input type="password" id="sync-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
     <div class="btns">
       <button class="btn-cancel" id="sync-cancel">Cerrar</button>
@@ -253,8 +253,19 @@ const SP=[
   ]},
 ];
 const TOTAL=980;
-const GIST_FN='panini-mundial-2026.json';
-const GIST_DESC='Álbum Panini FIFA World Cup 2026 - Mi colección';
+// ── ALMACENAMIENTO EN EL REPO ──
+const REPO_FALLBACK={owner:'pcgcgamboa',name:'panini-mundial-2026',branch:'main'};
+const DATA_PATH='coleccion.json';
+const RC=(function(){
+  let owner=REPO_FALLBACK.owner,name=REPO_FALLBACK.name;
+  if(location.hostname.endsWith('github.io')){
+    owner=location.hostname.split('.')[0];
+    const seg=location.pathname.split('/').filter(Boolean);
+    if(seg[0])name=seg[0];
+  }
+  return {owner,name,branch:REPO_FALLBACK.branch};
+})();
+const CONTENTS_URL=`https://api.github.com/repos/${RC.owner}/${RC.name}/contents/${DATA_PATH}`;
 
 function ts(tid){
   const s=[{id:`${tid}_badge`,label:'Escudo',type:'special',num:'★'}];
@@ -269,7 +280,7 @@ const exp=new Set();
 
 // ── SYNC STATE ──
 let syncToken=localStorage.getItem('panini2026_token')||null;
-let syncGistId=localStorage.getItem('panini2026_gist')||null;
+let dataSha=null;
 let syncStatus='idle';
 let syncTimer=null;
 let pullPending=false;
@@ -285,65 +296,65 @@ function updSyncBadge(){
 }
 
 async function gh(url,opts={}){
-  return fetch(url,{...opts,headers:{Authorization:`token ${syncToken}`,Accept:'application/vnd.github+json',...(opts.headers||{})}});
+  const headers={Accept:'application/vnd.github+json',...(opts.headers||{})};
+  if(syncToken)headers.Authorization=`token ${syncToken}`;
+  return fetch(url,{...opts,headers});
 }
 
-async function findOrCreateGist(){
-  let page=1;
-  while(page<=5){
-    const r=await gh(`https://api.github.com/gists?per_page=100&page=${page}`);
-    if(!r.ok)throw new Error('token-invalid');
-    const list=await r.json();
-    const found=list.find(g=>g.files&&g.files[GIST_FN]);
-    if(found)return found.id;
-    if(list.length<100)break;
-    page++;
-  }
-  const c=await gh('https://api.github.com/gists',{
-    method:'POST',
-    body:JSON.stringify({description:GIST_DESC,public:false,files:{[GIST_FN]:{content:JSON.stringify([...owned])}}})
-  });
-  if(!c.ok)throw new Error('create-failed');
-  const d=await c.json();
-  return d.id;
+function encB64(str){
+  const bytes=new TextEncoder().encode(str);
+  let bin='';bytes.forEach(b=>bin+=String.fromCharCode(b));
+  return btoa(bin);
+}
+function decB64(b64){
+  const bin=atob(b64.replace(/\s/g,''));
+  return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)));
 }
 
-async function pullGist(){
-  if(!syncToken||!syncGistId||pullPending)return;
-  pullPending=true;syncStatus='syncing';updSyncBadge();
+// Carga la colección desde coleccion.json del repo. Lectura pública (sin token).
+async function pullData(){
+  if(pullPending)return;
+  pullPending=true;
+  if(syncToken){syncStatus='syncing';updSyncBadge();}
   try{
-    const r=await gh(`https://api.github.com/gists/${syncGistId}`);
-    if(!r.ok)throw new Error();
+    const r=await gh(`${CONTENTS_URL}?ref=${RC.branch}`,{cache:'no-store'});
+    if(r.status===404){dataSha=null;syncStatus=syncToken?'synced':'idle';pullPending=false;updSyncBadge();return;}
+    if(!r.ok)throw new Error('read-failed');
     const d=await r.json();
-    const content=d.files[GIST_FN]?.content;
-    if(content){
-      const arr=JSON.parse(content);
-      if(Array.isArray(arr)){
-        owned=new Set(arr);
-        localStorage.setItem('panini2026',JSON.stringify(arr));
-        render();updProg();updConf();
-      }
+    dataSha=d.sha;
+    const arr=JSON.parse(decB64(d.content));
+    if(Array.isArray(arr)){
+      owned=new Set(arr);
+      localStorage.setItem('panini2026',JSON.stringify(arr));
+      render();updProg();updConf();
     }
-    syncStatus='synced';
+    syncStatus=syncToken?'synced':'idle';
   }catch(e){syncStatus='error';}
   pullPending=false;updSyncBadge();
 }
 
 function schedulePush(){
-  if(!syncToken||!syncGistId)return;
+  if(!syncToken)return;
   if(syncTimer)clearTimeout(syncTimer);
   syncStatus='syncing';updSyncBadge();
-  syncTimer=setTimeout(pushGist,1500);
+  syncTimer=setTimeout(()=>pushData(),1500);
 }
 
-async function pushGist(){
-  if(!syncToken||!syncGistId)return;
+// Guarda la colección en coleccion.json del repo (requiere token public_repo).
+async function pushData(retry){
+  if(!syncToken)return;
   try{
-    const r=await gh(`https://api.github.com/gists/${syncGistId}`,{
-      method:'PATCH',
-      body:JSON.stringify({files:{[GIST_FN]:{content:JSON.stringify([...owned])}}})
-    });
-    if(!r.ok)throw new Error();
+    const body={message:`Actualizar colección (${owned.size}/${TOTAL})`,content:encB64(JSON.stringify([...owned])),branch:RC.branch};
+    if(dataSha)body.sha=dataSha;
+    const r=await gh(CONTENTS_URL,{method:'PUT',body:JSON.stringify(body)});
+    if((r.status===409||r.status===422)&&!retry){
+      const g=await gh(`${CONTENTS_URL}?ref=${RC.branch}`,{cache:'no-store'});
+      dataSha=g.ok?(await g.json()).sha:null;
+      return pushData(true);
+    }
+    if(!r.ok)throw new Error('write-failed');
+    const d=await r.json();
+    if(d.content&&d.content.sha)dataSha=d.content.sha;
     syncStatus='synced';
   }catch(e){syncStatus='error';}
   updSyncBadge();
@@ -353,25 +364,23 @@ async function setupSync(token){
   syncToken=token;
   syncStatus='syncing';updSyncBadge();
   try{
-    const id=await findOrCreateGist();
-    syncGistId=id;
+    const u=await gh('https://api.github.com/user');
+    if(!u.ok)throw new Error('token-invalid');
     localStorage.setItem('panini2026_token',token);
-    localStorage.setItem('panini2026_gist',id);
-    await pullGist();
+    await pullData();
+    await pushData();
     return {ok:true};
   }catch(e){
-    syncToken=null;syncGistId=null;
+    syncToken=null;
     localStorage.removeItem('panini2026_token');
-    localStorage.removeItem('panini2026_gist');
     syncStatus='idle';updSyncBadge();
     return {ok:false,err:e.message};
   }
 }
 
 function disconnectSync(){
-  syncToken=null;syncGistId=null;
+  syncToken=null;
   localStorage.removeItem('panini2026_token');
-  localStorage.removeItem('panini2026_gist');
   syncStatus='idle';updSyncBadge();
 }
 
@@ -580,7 +589,7 @@ document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==
 function openSyncModal(){
   const cur=document.getElementById('sync-current');
   if(syncToken){
-    cur.innerHTML=`<div class="sync-status ok">✓ Sincronización activa<br><span style="font-size:9px;color:#64748B">Gist ID: ${syncGistId?.slice(0,8)}…</span></div>`;
+    cur.innerHTML=`<div class="sync-status ok">✓ Guardado en tu repositorio<br><span style="font-size:9px;color:#64748B">${RC.owner}/${RC.name} · ${DATA_PATH}</span></div>`;
     document.getElementById('sync-disconnect').style.display='block';
     document.getElementById('sync-connect').textContent='Actualizar token';
     document.getElementById('sync-token').value='';
@@ -610,7 +619,7 @@ document.getElementById('sync-connect').addEventListener('click',async()=>{
     document.getElementById('sync-token').value='';
     setTimeout(closeSyncModal,1500);
   }else{
-    cur.innerHTML='<div class="sync-status err">✕ Error: token inválido o sin permisos de gist.</div>';
+    cur.innerHTML='<div class="sync-status err">✕ Error: token inválido o sin permisos (public_repo).</div>';
   }
 });
 
@@ -622,7 +631,7 @@ document.getElementById('sync-disconnect').addEventListener('click',()=>{
 
 // ── INIT ──
 render();updProg();updSyncBadge();
-if(syncToken&&syncGistId) pullGist();
+pullData();
 </script>
 </body>
 </html>
