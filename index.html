@@ -336,10 +336,14 @@ const exp=new Set();
 // ── SYNC STATE ──
 let syncToken=localStorage.getItem('panini2026_token')||null;
 let dataSha=null;
+let dataEtag=null;
 let syncStatus='idle';
 let syncTimer=null;
 let pullPending=false;
+let pushPending=false;
+let pollTimer=null;
 let lastErr='';
+const POLL_MS=30000;
 
 function updSyncBadge(){
   const b=document.getElementById('sync-badge');
@@ -367,38 +371,52 @@ function decB64(b64){
   return new TextDecoder().decode(Uint8Array.from(bin,c=>c.charCodeAt(0)));
 }
 
+function sameOwned(arr){
+  if(arr.length!==owned.size)return false;
+  for(const x of arr)if(!owned.has(x))return false;
+  return true;
+}
+
 // Carga la colección desde coleccion.json del repo. Lectura pública (sin token).
-async function pullData(){
+// silent=true (sondeo): usa ETag (304 = sin cambios, no gasta cuota) y solo re-renderiza si el contenido cambió.
+async function pullData(silent){
   if(pullPending)return;
   pullPending=true;
-  if(syncToken){syncStatus='syncing';updSyncBadge();}
+  if(!silent&&syncToken){syncStatus='syncing';updSyncBadge();}
   try{
-    const r=await gh(`${CONTENTS_URL}?ref=${RC.branch}`,{cache:'no-store'});
-    if(r.status===404){dataSha=null;syncStatus=syncToken?'synced':'idle';pullPending=false;updSyncBadge();return;}
+    const headers={};
+    if(dataEtag)headers['If-None-Match']=dataEtag;
+    const r=await gh(`${CONTENTS_URL}?ref=${RC.branch}`,{cache:'no-store',headers});
+    if(r.status===304){syncStatus=syncToken?'synced':'idle';pullPending=false;if(!silent)updSyncBadge();return;}
+    if(r.status===404){dataSha=null;dataEtag=null;syncStatus=syncToken?'synced':'idle';pullPending=false;updSyncBadge();return;}
     if(!r.ok)throw new Error('read-failed');
+    const et=r.headers.get('ETag');if(et)dataEtag=et;
     const d=await r.json();
     dataSha=d.sha;
     const arr=JSON.parse(decB64(d.content));
-    if(Array.isArray(arr)){
+    if(Array.isArray(arr)&&!sameOwned(arr)){
       owned=new Set(arr);
       localStorage.setItem('panini2026',JSON.stringify(arr));
       render();updProg();updConf();
+      syncStatus='synced';
+    }else{
+      syncStatus=syncToken?'synced':'idle';
     }
-    syncStatus=syncToken?'synced':'idle';
-  }catch(e){syncStatus='error';}
+  }catch(e){if(!silent)syncStatus='error';}
   pullPending=false;updSyncBadge();
 }
 
 function schedulePush(){
   if(!syncToken)return;
   if(syncTimer)clearTimeout(syncTimer);
+  pushPending=true;
   syncStatus='syncing';updSyncBadge();
   syncTimer=setTimeout(()=>pushData(),1500);
 }
 
 // Guarda la colección en coleccion.json del repo (requiere token public_repo).
 async function pushData(retry){
-  if(!syncToken)return false;
+  if(!syncToken){pushPending=false;return false;}
   try{
     const body={message:`Actualizar colección (${owned.size}/${TOTAL})`,content:encB64(JSON.stringify([...owned])),branch:RC.branch};
     if(dataSha)body.sha=dataSha;
@@ -417,9 +435,10 @@ async function pushData(retry){
     }
     const d=await r.json();
     if(d.content&&d.content.sha)dataSha=d.content.sha;
-    syncStatus='synced';lastErr='';updSyncBadge();return true;
+    // El ETag de lectura cambiará tras el commit; el próximo sondeo lo reconciliará sin re-render (sameOwned).
+    syncStatus='synced';lastErr='';pushPending=false;updSyncBadge();return true;
   }catch(e){syncStatus='error';}
-  updSyncBadge();return false;
+  pushPending=false;updSyncBadge();return false;
 }
 
 // Determina la causa exacta de un fallo de escritura (scope vs cuenta equivocada).
@@ -721,9 +740,22 @@ document.getElementById('sync-disconnect').addEventListener('click',()=>{
   closeSyncModal();
 });
 
+// Sondeo: revisa coleccion.json cada 30s y recarga si cambió. Pausa en segundo plano y si hay un guardado en curso.
+function startPolling(){
+  if(pollTimer)clearInterval(pollTimer);
+  pollTimer=setInterval(()=>{
+    if(document.hidden||pushPending||pullPending)return;
+    pullData(true);
+  },POLL_MS);
+}
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&!pushPending&&!pullPending)pullData(true);
+});
+
 // ── INIT ──
 render();updProg();updSyncBadge();
 pullData();
+startPolling();
 </script>
 </body>
 </html>
