@@ -46,7 +46,7 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS','Segoe UI
 .conf-mini{width:40px;height:3px;background:#0A1624;border-radius:2px;overflow:hidden}
 .conf-mini-fill{height:100%;border-radius:2px;transition:width .2s}
 .conf-stat{font-size:9px;color:#334155;min-width:60px;text-align:right}
-.team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:7px}
+.team-grid{display:grid;grid-template-columns:1fr;gap:7px}
 .team-card{border-radius:10px;border:1px solid var(--border);background:var(--card);overflow:hidden;transition:border-color .2s}
 .team-card.complete{border-color:var(--tc)}
 .team-head{padding:9px 10px 7px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:7px}
@@ -61,11 +61,13 @@ body{background:var(--bg);color:var(--text);font-family:'Trebuchet MS','Segoe UI
 .team-body{padding:7px 8px 10px;display:none}
 .team-body.open{display:block}
 .mark-all{width:100%;padding:4px;border-radius:5px;border:1px solid;background:transparent;font-size:9px;font-weight:700;cursor:pointer;margin-bottom:6px;letter-spacing:.3px;transition:opacity .1s}
-.stk{aspect-ratio:2/3;border-radius:5px;border:1px dashed #1E3050;background:#060C16;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none;transition:all .12s;position:relative;overflow:hidden}
+.stk{aspect-ratio:2/3;border-radius:5px;border:1px dashed #1E3050;background:#060C16;display:flex;flex-direction:column;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;transition:all .12s;position:relative;overflow:hidden;padding:5px 3px 3px;text-align:center}
 .stk.owned{border-width:2px}
-.stk .check{font-size:13px;opacity:0;transition:opacity .1s}
-.stk.owned .check{opacity:.85}
-.stk .num{position:absolute;bottom:2px;font-size:8px;font-weight:700;color:#1E3050;transition:color .12s}
+.stk .check{font-size:15px;opacity:0;transition:opacity .1s;line-height:1}
+.stk.owned .check{opacity:.9}
+.stk .pname{font-size:8px;line-height:1.13;color:#5B7089;width:100%;word-break:break-word;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.stk.owned .pname{color:var(--text)}
+.stk .num{font-size:8px;font-weight:700;color:#1E3050;transition:color .12s;line-height:1}
 .stk.owned .num{color:inherit}
 #bottom{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(0deg,#0B1423 60%,transparent);padding:10px 16px 14px;display:flex;justify-content:space-around;pointer-events:none}
 .stat{text-align:center}
@@ -267,9 +269,62 @@ const RC=(function(){
 })();
 const CONTENTS_URL=`https://api.github.com/repos/${RC.owner}/${RC.name}/contents/${DATA_PATH}`;
 
+// Convocatorias probables (mayo 2026). Editable: si falta un nombre, se muestra "Jugador N".
+const ROSTERS={
+  arg:["Emiliano Martínez","Gerónimo Rulli","Nahuel Molina","Cristian Romero","Nicolás Otamendi","Nicolás Tagliafico","Lisandro Martínez","Gonzalo Montiel","Rodrigo De Paul","Alexis Mac Allister","Enzo Fernández","Exequiel Palacios","Leandro Paredes","Nicolás González","Lionel Messi","Lautaro Martínez","Julián Álvarez","Thiago Almada"],
+  bra:["Alisson","Ederson","Marquinhos","Gabriel Magalhães","Danilo","Bremer","Wesley","Alex Sandro","Bruno Guimarães","Casemiro","Lucas Paquetá","Fabinho","Vinícius Júnior","Raphinha","Neymar","Matheus Cunha","Endrick","Rodrygo"],
+  col:["Camilo Vargas","David Ospina","Daniel Muñoz","Davinson Sánchez","Jhon Lucumí","Yerry Mina","Johan Mojica","Deiver Machado","James Rodríguez","Jefferson Lerma","Richard Ríos","Juan Fernando Quintero","Jhon Arias","Kevin Castaño","Luis Díaz","Jhon Córdoba","Luis Suárez","Juan Camilo Hernández"],
+  uru:["Sergio Rochet","Fernando Muslera","José María Giménez","Ronald Araújo","Mathías Olivera","Sebastián Cáceres","Joaquín Piquerez","Guillermo Varela","Federico Valverde","Rodrigo Bentancur","Manuel Ugarte","Nicolás de la Cruz","Giorgian de Arrascaeta","Maximiliano Araújo","Darwin Núñez","Facundo Pellistri","Brian Rodríguez","Rodrigo Aguirre"],
+  ecu:["Hernán Galíndez","Gonzalo Valle","Pervis Estupiñán","Piero Hincapié","Willian Pacho","Félix Torres","Angelo Preciado","Joel Ordóñez","Moisés Caicedo","Alan Franco","Kendry Páez","Jordy Alcívar","Pedro Vite","Nilson Angulo","Enner Valencia","Gonzalo Plata","Kevin Rodríguez","John Yeboah"],
+  par:["Roberto Fernández","Orlando Gill","Gustavo Gómez","Omar Alderete","Junior Alonso","Fabián Balbuena","Alan Benítez","Juan Cáceres","Andrés Cubas","Mathías Villasanti","Damián Bobadilla","Diego Gómez","Matías Galarza","Alejandro Romero Gamarra","Miguel Almirón","Julio Enciso","Antonio Sanabria","Ramón Sosa"],
+  ven:["Rafael Romo","Wuilker Faríñez","Jon Aramburu","Nahuel Ferraresi","Wilker Ángel","Miguel Navarro","Jhon Chancellor","Ronald Hernández","Yangel Herrera","Tomás Rincón","Cristian Cásseres","José Martínez","Telasco Segovia","Jefferson Savarino","Salomón Rondón","Yeferson Soteldo","Josef Martínez","Eduard Bello"],
+  usa:["Matt Turner","Matt Freese","Sergiño Dest","Antonee Robinson","Chris Richards","Tim Ream","Miles Robinson","Joe Scally","Tyler Adams","Weston McKennie","Yunus Musah","Gio Reyna","Malik Tillman","Tim Weah","Christian Pulisic","Folarin Balogun","Ricardo Pepi","Haji Wright"],
+  mex:["Guillermo Ochoa","Raúl Rangel","César Montes","Johan Vásquez","Israel Reyes","Jesús Gallardo","Jorge Sánchez","Mateo Chávez","Edson Álvarez","Luis Chávez","Orbelín Pineda","Gilberto Mora","Álvaro Fidalgo","Roberto Alvarado","Santiago Giménez","Raúl Jiménez","Alexis Vega","Julián Quiñones"],
+  can:["Dayne St. Clair","Maxime Crépeau","Alphonso Davies","Alistair Johnston","Derek Cornelius","Moïse Bombito","Richie Laryea","Joel Waterman","Stephen Eustáquio","Ismaël Koné","Jonathan Osorio","Tajon Buchanan","Mathieu Choinière","Liam Millar","Jonathan David","Cyle Larin","Jacob Shaffelburg","Promise David"],
+  pan:["Orlando Mosquera","Luis Mejía","César Blackman","Amir Murillo","Fidel Escobar","José Córdoba","Eric Davis","Roderick Miller","Aníbal Godoy","Adalberto Carrasquilla","Carlos Harvey","Cristian Martínez","José Luis Rodríguez","Yoel Bárcenas","Ismael Díaz","Cecilio Waterman","José Fajardo","Alberto Quintero"],
+  hon:["Edrick Menjívar","Luis Ortiz","Denil Maldonado","Joseph Rosales","Cristopher Meléndez","Luis Vega","Clinton Benett","Giancarlo Sacaza","Kervin Arriaga","Jorge Álvarez","David Ruiz","Edwin Rodríguez","Luis Palma","Rigoberto Rivas","Jorge Benguché","Dereck Moncada","Alenis Vargas","Erick Puerto"],
+  jam:["Andre Blake","Jahmali Waite","Ethan Pinnock","Damion Lowe","Joel Latibeaudiere","Dexter Lembikisa","Rico Henry","Mason Holgate","Isaac Hayden","Bobby Reid","Karoy Anderson","Jonathan Russell","Demarai Gray","Leon Bailey","Shamar Nicholson","Dujuan Richards","Renaldo Cephas","Bailey Cadamarteri"],
+  nzl:["Max Crocombe","Alex Paulsen","Tim Payne","Michael Boxall","Liberato Cacace","Tyler Bindon","Nando Pijnaker","Tommy Smith","Joe Bell","Marko Stamenić","Matt Garbett","Sarpreet Singh","Ben Old","Ryan Thomas","Chris Wood","Kosta Barbarouses","Ben Waine","Eli Just"],
+  ger:["Manuel Neuer","Oliver Baumann","Joshua Kimmich","Antonio Rüdiger","Jonathan Tah","Nico Schlotterbeck","David Raum","Malick Thiaw","Florian Wirtz","Leon Goretzka","Leroy Sané","Aleksandar Pavlović","Angelo Stiller","Nick Woltemade","Jamal Musiala","Kai Havertz","Deniz Undav","Maximilian Beier"],
+  fra:["Mike Maignan","Lucas Chevalier","William Saliba","Dayot Upamecano","Theo Hernandez","Pierre Kalulu","Lucas Digne","Lucas Hernandez","Aurélien Tchouaméni","Eduardo Camavinga","Adrien Rabiot","Manu Koné","Warren Zaïre-Emery","N'Golo Kanté","Kylian Mbappé","Ousmane Dembélé","Michael Olise","Marcus Thuram"],
+  esp:["Unai Simón","David Raya","Marc Cucurella","Pau Cubarsí","Aymeric Laporte","Alejandro Grimaldo","Pedro Porro","Eric García","Rodri","Pedri","Gavi","Martín Zubimendi","Fabián Ruiz","Mikel Merino","Lamine Yamal","Nico Williams","Dani Olmo","Mikel Oyarzabal"],
+  eng:["Jordan Pickford","Dean Henderson","Reece James","John Stones","Marc Guéhi","Ezri Konsa","Tino Livramento","Dan Burn","Declan Rice","Jude Bellingham","Kobbie Mainoo","Elliot Anderson","Eberechi Eze","Morgan Rogers","Harry Kane","Bukayo Saka","Ollie Watkins","Anthony Gordon"],
+  por:["Diogo Costa","Rui Silva","Rúben Dias","Nuno Mendes","João Cancelo","Diogo Dalot","Gonçalo Inácio","Nélson Semedo","Vitinha","João Neves","Bruno Fernandes","Bernardo Silva","Rúben Neves","Matheus Nunes","Cristiano Ronaldo","Rafael Leão","João Félix","Pedro Neto"],
+  ned:["Bart Verbruggen","Mark Flekken","Virgil van Dijk","Nathan Aké","Denzel Dumfries","Jurriën Timber","Micky van de Ven","Jorrel Hato","Frenkie de Jong","Tijjani Reijnders","Ryan Gravenberch","Teun Koopmeiners","Quinten Timber","Mats Wieffer","Cody Gakpo","Memphis Depay","Donyell Malen","Justin Kluivert"],
+  bel:["Thibaut Courtois","Matz Sels","Timothy Castagne","Arthur Theate","Koni De Winter","Zeno Debast","Thomas Meunier","Maxim De Cuyper","Kevin De Bruyne","Amadou Onana","Axel Witsel","Hans Vanaken","Nicolas Raskin","Alexis Saelemaekers","Jérémy Doku","Loïs Openda","Leandro Trossard","Charles De Ketelaere"],
+  sui:["Gregor Kobel","Yvon Mvogo","Manuel Akanji","Ricardo Rodríguez","Nico Elvedi","Silvan Widmer","Miro Muheim","Aurèle Amenda","Granit Xhaka","Remo Freuler","Denis Zakaria","Ardon Jashari","Rubén Vargas","Fabian Rieder","Breel Embolo","Dan Ndoye","Noah Okafor","Zeki Amdouni"],
+  aut:["Alexander Schlager","Patrick Pentz","David Alaba","Kevin Danso","Stefan Posch","Philipp Lienhart","Phillipp Mwene","Alexander Prass","Marcel Sabitzer","Konrad Laimer","Xaver Schlager","Nicolas Seiwald","Christoph Baumgartner","Patrick Wimmer","Marko Arnautović","Michael Gregoritsch","Paul Wanner","Saša Kalajdžić"],
+  tur:["Uğurcan Çakır","Altay Bayındır","Merih Demiral","Zeki Çelik","Çağlar Söyüncü","Mert Müldür","Ferdi Kadıoğlu","Abdülkerim Bardakcı","Hakan Çalhanoğlu","Orkun Kökçü","İsmail Yüksek","Salih Özcan","Arda Güler","Kaan Ayhan","Kenan Yıldız","Kerem Aktürkoğlu","Barış Alper Yılmaz","Yunus Akgün"],
+  pol:["Łukasz Skorupski","Kamil Grabara","Jan Bednarek","Jakub Kiwior","Matty Cash","Bartosz Bereszyński","Paweł Dawidowicz","Jan Ziółkowski","Piotr Zieliński","Sebastian Szymański","Jakub Moder","Nicola Zalewski","Bartosz Slisz","Jakub Kamiński","Robert Lewandowski","Karol Świderski","Krzysztof Piątek","Kamil Grosicki"],
+  cro:["Dominik Livaković","Ivica Ivušić","Joško Gvardiol","Josip Stanišić","Josip Šutalo","Marin Pongračić","Duje Ćaleta-Car","Borna Sosa","Luka Modrić","Mateo Kovačić","Marcelo Brozović","Luka Sučić","Mario Pašalić","Nikola Vlašić","Ante Budimir","Andrej Kramarić","Petar Musa","Ivan Perišić"],
+  srb:["Predrag Rajković","Đorđe Petrović","Nikola Milenković","Strahinja Pavlović","Filip Kostić","Aleksa Terzić","Nemanja Stojić","Miloš Veljković","Saša Lukić","Nemanja Gudelj","Ivan Ilić","Andrija Živković","Lazar Samardžić","Nemanja Maksimović","Dušan Vlahović","Aleksandar Mitrović","Luka Jović","Dušan Tadić"],
+  sco:["Angus Gunn","Craig Gordon","Andy Robertson","Kieran Tierney","Jack Hendry","Grant Hanley","John Souttar","Anthony Ralston","Scott McTominay","John McGinn","Billy Gilmour","Ryan Christie","Kenny McLean","Lewis Ferguson","Ché Adams","Lawrence Shankland","Lyndon Dykes","Ben Doak"],
+  den:["Kasper Schmeichel","Mads Hermansen","Joachim Andersen","Andreas Christensen","Joakim Mæhle","Alexander Bah","Victor Nelsson","Jannik Vestergaard","Pierre-Emile Højbjerg","Morten Hjulmand","Christian Eriksen","Christian Nørgaard","Victor Froholdt","Mikkel Damsgaard","Rasmus Højlund","Gustav Isaksen","Anders Dreyer","Mika Biereth"],
+  hun:["Péter Gulácsi","Dénes Dibusz","Willi Orbán","Milos Kerkez","Attila Szalai","Loïc Négo","Bendegúz Bolla","Márton Dárdai","Dominik Szoboszlai","András Schäfer","Callum Styles","Zsolt Nagy","Alex Tóth","Milán Vitális","Barnabás Varga","Roland Sallai","Dániel Lukács","Kevin Csoboth"],
+  jpn:["Zion Suzuki","Keisuke Osako","Takehiro Tomiyasu","Ko Itakura","Tsuyoshi Watanabe","Hiroki Ito","Yukinari Sugawara","Shogo Taniguchi","Wataru Endo","Daichi Kamada","Ao Tanaka","Ritsu Doan","Takefusa Kubo","Junya Ito","Daizen Maeda","Ayase Ueda","Keito Nakamura","Koki Ogawa"],
+  kor:["Kim Seung-gyu","Jo Hyeon-woo","Kim Min-jae","Kim Tae-hyon","Seol Young-woo","Kim Moon-hwan","Cho Yu-min","Jens Castrop","Hwang In-beom","Lee Jae-sung","Lee Kang-in","Bae Jun-ho","Paik Seung-ho","Yang Hyun-jun","Son Heung-min","Hwang Hee-chan","Oh Hyeon-gyu","Cho Gue-sung"],
+  irn:["Alireza Beiranvand","Hossein Hosseini","Ehsan Hajsafi","Milad Mohammadi","Hossein Kanaanizadegan","Shojae Khalilzadeh","Abolfazl Jalali","Ramin Rezaeian","Saeid Ezatolahi","Omid Noorafkan","Saman Ghoddos","Mehdi Torabi","Ali Gholizadeh","Mehdi Ghayedi","Mehdi Taremi","Alireza Jahanbakhsh","Mohammad Mohebi","Ali Alipour"],
+  aus:["Mathew Ryan","Joe Gauci","Harry Souttar","Alessandro Circati","Aziz Behich","Jordan Bos","Cameron Burgess","Kye Rowles","Aiden O'Neill","Alex Robertson","Connor Metcalfe","Nestory Irankunda","Anthony Caceres","Patrick Yazbek","Martin Boyle","Mitchell Duke","Jamie Maclaren","Mohamed Toure"],
+  ksa:["Mohammed Alowais","Nawaf Alaqidi","Saud Abdulhamid","Hassan Altambakti","Ali Lajami","Hassan Kadesh","Nasser Aldawsari","Abdullah Alamri","Mohammed Kanno","Musab Aljuwayr","Abdullah Alkhaibari","Aiman Yahya","Salem Al-Dawsari","Saleh Abu Alshamat","Feras Al-Buraikan","Saleh Alshehri","Abdullah Alhamddan","Khalid Alghannam"],
+  jor:["Yazeed Abu Laila","Abdallah Al-Fakhouri","Yazan Al-Arab","Mohammad Abu Al-Nadi","Salem Obaid","Yousef Abu Al-Jazar","Hadi Al-Hourani","Abdallah Nasib","Noor Al-Rawabdeh","Nizar Al-Rashdan","Rajaei Ayed","Ibrahim Sadeh","Mohammad Al-Dawoud","Amer Jamous","Musa Al-Taamari","Yazan Al-Naimat","Ali Olwan","Mahmoud Al-Mardi"],
+  irq:["Jalal Hassan","Fahad Talib","Rebin Sulaka","Merchas Doski","Zaid Tahseen","Manaf Younis","Hussein Ali","Akam Hashim","Amir Al-Ammari","Zidane Iqbal","Ibrahim Bayesh","Aimar Sher","Kevin Yakob","Hussein Abdulkareem","Aymen Hussein","Mohanad Ali","Ali Jasim","Ali Al-Hamadi"],
+  uzb:["Utkir Yusupov","Botirali Ergashev","Abdukodir Khusanov","Rustamjon Ashurmatov","Umarbek Eshmuradov","Farrukh Sayfiev","Sherzod Nasrullaev","Khojiakbar Alijonov","Otabek Shukurov","Odiljon Hamrobekov","Jamshid Iskanderov","Abbosbek Fayzullaev","Jaloliddin Masharipov","Dostonbek Hamdamov","Eldor Shomurodov","Igor Sergeev","Oston Urunov","Azizbek Amonov"],
+  mar:["Yassine Bono","Ahmed Reda Tagnaouti","Achraf Hakimi","Nayef Aguerd","Noussair Mazraoui","Anass Salah-Eddine","Chadi Riad","Issa Diop","Sofyan Amrabat","Ismael Saibari","Neil El Aynaoui","Bilal El Khannouss","Azzedine Ounahi","Ayyoub Bouaddi","Brahim Díaz","Ayoub El Kaabi","Soufiane Rahimi","Abde Ezzalzouli"],
+  sen:["Édouard Mendy","Mory Diaw","Kalidou Koulibaly","Krépin Diatta","El Hadji Malick Diouf","Moussa Niakhaté","Ismaïl Jakobs","Abdoulaye Seck","Idrissa Gana Gueye","Pape Gueye","Lamine Camara","Habib Diarra","Pape Matar Sarr","Pathé Ciss","Sadio Mané","Ismaïla Sarr","Iliman Ndiaye","Nicolas Jackson"],
+  nga:["Stanley Nwabali","Maduka Okoye","William Ekong","Calvin Bassey","Semi Ajayi","Bruno Onyemaechi","Chidozie Awaziem","Zaidu Sanusi","Alex Iwobi","Raphael Onyedika","Frank Onyeka","Alhassan Yusuf","Wilfred Ndidi","Moses Simon","Ademola Lookman","Samuel Chukwueze","Victor Osimhen","Tolu Arokodare"],
+  alg:["Luca Zidane","Anthony Mandrea","Aïssa Mandi","Rayan Aït-Nouri","Ramy Bensebaini","Rafik Belghali","Jaouen Hadjam","Zineddine Belaid","Farès Chaïbi","Ismaël Bennacer","Houssem Aouar","Hicham Boudaoui","Ibrahim Maza","Nabil Bentaleb","Riyad Mahrez","Mohamed Amoura","Amine Gouiri","Baghdad Bounedjah"],
+  tun:["Aymen Dahmen","Abdelmohib Chamekh","Montassar Talbi","Dylan Bronn","Omar Rekik","Yan Valery","Ali Abdi","Mohamed Amin Ben Hamida","Ellyes Skhiri","Hannibal Mejbri","Anis Ben Slimane","Rani Khedira","Ismail Gharbi","Mortadha Ben Ouanes","Elyes Achouri","Sebastian Tounekti","Firas Chaouat","Elyes Saad"],
+  egy:["Mohamed El Shenawy","Moustafa Shobeir","Mohamed Hany","Hamdy Fathy","Ramy Rabia","Mohamed Abdelmonem","Ahmed El Fotouh","Hossam Abdelmaguid","Zizo","Trézéguet","Emam Ashour","Ibrahim Adel","Marwan Attia","Mohamed Salah","Omar Marmoush","Hamza Abdelkarim","Haissem Hassan","Aktay Abdallah"],
+  cmr:["André Onana","Devis Epassy","Jean-Charles Castelletto","Michael Ngadeu-Ngadjui","Jackson Tchatchoua","Nouhou Tolo","Darlin Yongwa","Malcolm Bokele","Frank Zambo Anguissa","Carlos Baleba","Martin Hongla","Jean Onana","Yvan Neyou","Arthur Avom","Bryan Mbeumo","Vincent Aboubakar","Eric Maxim Choupo-Moting","Karl Etta Eyong"],
+  civ:["Yahia Fofana","Alban Lafont","Wilfried Singo","Odilon Kossounou","Evan Ndicka","Ousmane Diomande","Emmanuel Agbadou","Guela Doué","Franck Kessié","Jean Michaël Seri","Ibrahim Sangaré","Seko Fofana","Christ Inao Oulai","Parfait Guiagon","Nicolas Pépé","Simon Adingra","Evann Guessand","Amad Diallo"],
+  cod:["Lionel Mpasi","Timothy Fayulu","Chancel Mbemba","Aaron Wan-Bissaka","Arthur Masuaku","Rocky Bushiri","Dylan Batubinsika","Gédéon Kalulu","Noah Sadiki","Edo Kayembe","Ngal'ayel Mukau","Charles Pickel","Samuel Moutoussamy","Gaël Kakuta","Yoane Wissa","Théo Bongonda","Meschack Elia","Nathanaël Mbuku"],
+  rsa:["Ronwen Williams","Sipho Chaine","Aubrey Modiba","Khuliso Mudau","Nkosinathi Sibisi","Mbekezeli Mbokazi","Ime Okon","Khulumani Ndamane","Teboho Mokoena","Sphephelo Sithole","Thalente Mbatha","Jayden Adams","Themba Zwane","Oswin Appollis","Lyle Foster","Evidence Makgopa","Iqraam Rayners","Relebohile Mofokeng"]
+};
+
 function ts(tid){
+  const names=ROSTERS[tid]||[];
   const s=[{id:`${tid}_badge`,label:'Escudo',type:'special',num:'★'}];
-  for(let i=1;i<=18;i++) s.push({id:`${tid}_p${i}`,label:`Jugador ${i}`,type:'player',num:i});
+  for(let i=1;i<=18;i++) s.push({id:`${tid}_p${i}`,label:names[i-1]||`Jugador ${i}`,type:'player',num:i});
   s.push({id:`${tid}_group`,label:'Foto Grupal',type:'special',num:'📸'});
   return s;
 }
@@ -431,6 +486,7 @@ function makeSlot(stk,color){
   const d=el('div','stk'+(isO?' owned':''));
   d.dataset.id=stk.id;d.title=stk.label;d.style.color=color;
   d.appendChild(el('span','check',stk.type==='special'?'⭐':'✓'));
+  d.appendChild(el('span','pname',stk.label));
   d.appendChild(el('span','num',String(stk.num)));
   d.addEventListener('click',()=>tog(stk.id,d,color));
   return d;
